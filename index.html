@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico de Linha - Vega-lite</title>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+<body>
+    <h1>Gráfico de Linha</h1>
+    <div id="chart1"></div>
+    <hr>
+    <div id="oil-producers-chart"></div>
+    <script>
+       
+      const spec = {
+          $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+          description: 'Evolução do uso de carvão ao longo dos anos',
+          data: {
+              url: 'data/Electricity_production_by_source.csv', // Salve o arquivo CSV em uma pasta chamada "data"
+              format: { type: 'csv' }
+          },
+          mark: 'line',
+          encoding: {
+              x: { field: 'Year', type: 'temporal', title: 'Ano' },
+              y: { field: 'Coal', type: 'quantitative', title: 'Produção (TWh)' },
+              color: { field: 'Entity', type: 'nominal', title: 'País' }
+          }
+      };                
+
+      vegaEmbed('#chart1', spec).catch(console.error);
+    
+            // Configuração do gráfico Vega-lite
+      const compar = {
+        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        description: 'Comparação entre os 3 maiores produtores de óleo',
+        data: {
+          url: 'data/Electricity_production_by_source.csv', // Certifique-se de que o arquivo CSV está neste local
+          format: { type: 'csv' }
+        },
+        transform: [
+          { filter: "datum.Year == 2023" }, // Filtrar apenas o ano mais recente (2023)
+          { calculate: "parseFloat(datum.Oil)", as: "Oil" }, // Garantir que a coluna 'Oil' seja tratada como número
+          { window: [{ op: 'rank', as: 'Rank' }], sort: [{ field: 'Oil', order: 'descending' }] }, // Rankear os países pelo valor de 'Oil'
+          { filter: "datum.Rank <= 3" } // Filtrar apenas os 3 maiores produtores
+        ],
+        mark: 'bar',
+        encoding: {
+          x: {
+            field: 'Entity',
+            type: 'nominal',
+            title: 'País',
+            axis: { labelAngle: 0.1 } // Deixa os nomes dos países na horizontal
+          },
+          y: {
+            field: 'Oil',
+            type: 'quantitative',
+            title: 'Produção de Óleo (TWh)'
+          },
+          color: {
+            field: 'Entity',
+            type: 'nominal',
+            legend: null // Remove a legenda, pois o eixo X já mostra os países
+          },
+          tooltip: [
+            { field: 'Entity', type: 'nominal', title: 'País' },
+            { field: 'Oil', type: 'quantitative', title: 'Produção de Óleo (TWh)', format: '.2f' }
+          ]
+        },
+        config: {
+          view: { stroke: null },
+          axis: { grid: false }
+        }
+      };
+
+      // Renderizar o gráfico na div com id "oil-producers-chart"
+      vegaEmbed('#oil-producers-chart', compar).catch(console.error);    
+    </script>
+
+</body>
+</html>
