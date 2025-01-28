@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Gráfico de Linha - Vega-lite</title>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  </head>
+  <body>
+    <h1>Comparação entre países e regiões</h1>
+    <div id="countries-regions-heatmap"></div>
+
+    <style>
+      #time_trends_by_source {
+        width: 100%;
+      }
+    </style>
+    <script>                              
+      // mapa de calor
+      const heatmapSpec = {
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        description: "Mapa de calor comparando países/regiões e fontes de energia",         
+        data: {
+          url: "data/Electricity_production_by_source.csv", 
+          format: { type: "csv" }
+        },
+        transform: [
+          { fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], as: ["Energy Source", "Production"] },
+          { calculate: "datum.Production == '' ? 0 : parseFloat(datum.Production)", as: "Production" } // Converte valores vazios para 0
+        ],
+        mark: "rect",
+        encoding: {
+          y: {
+            field: "Energy Source",
+            type: "nominal",
+            title: "Fonte de Energia",
+            axis: { labelAngle: -45 }
+          },
+          x: {
+            field: "Entity",
+            type: "nominal",
+            title: "País/Região",
+            sort: "-x" // Ordenação pelos valores de produção
+          },
+          color: {
+            field: "Production",
+            type: "quantitative",
+            title: "Produção (TWh)",
+            scale: { scheme: "blues" } // Esquema de cores para o mapa de calor
+          },
+          tooltip: [
+            { field: "Entity", type: "nominal", title: "País/Região" },
+            { field: "Energy Source", type: "nominal", title: "Fonte de Energia" },
+            { field: "Production", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
+          ]
+        },
+        config: {
+          view: { stroke: null },
+          axis: { grid: false }
+        }
+      };
+      // Renderizar o gráfico na div com id "countries-regions-heatmap"
+      vegaEmbed("#countries-regions-heatmap", heatmapSpec).catch(console.error);
+
+    </script>
+  </body>
+</html>

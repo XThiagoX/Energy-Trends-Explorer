@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,24 +18,72 @@
     <h1>Crescimento das fontes emergentes de energia</h1>
     <div id="emerging-energy-growth"></div>
     <h1>Comparação regional de transição energética</h1>
-    <div id="regional-energy-transition"></div>
-
+    <div id="regional-energy-transition"></div>    
+    <style>
+      #time_trends_by_source {
+        width: 100%;
+      }
+    </style>
     <script>                              
       const lineChartTimeTrends = {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
         description: "Tendências temporais na produção de eletricidade por fonte",
+        width: "container", // Ajusta automaticamente à largura da div
+        height: 400, // Altura fixa (opcional, ajustável)
         data: {
           url: "data/Electricity_production_by_source.csv", // Certifique-se de que o caminho está correto
           format: { type: "csv" }
         },
         transform: [
-          { fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], as: ["Source", "Production"] }
+          {
+            fold: [
+              "Coal",
+              "Gas",
+              "Nuclear",
+              "Hydro",
+              "Solar",
+              "Oil",
+              "Wind",
+              "Bioenergy",
+              "Other renewables"
+            ],
+            as: ["Source", "Production"]
+          },
+          {
+            calculate: "datum.Production == null || datum.Production === '' ? 0 : datum.Production",
+            as: "Production"
+          }
         ],
-        mark: "line",
+        mark: { type: "line", interpolate: "monotone"},
         encoding: {
-          x: { field: "Year", type: "temporal", title: "Ano" },
-          y: { field: "Production", type: "quantitative", title: "Produção (TWh)" },
-          color: { field: "Source", type: "nominal", title: "Fonte de Energia" },
+          x: { field: "Year", type: "temporal", title: "Ano", axis: { format: "%Y" }, tickCount: "Year" },
+          y: { field: "Production", type: "quantitative", title: "Produção (TWh)"},
+          color: { field: "Source", type: "nominal", title: "Fonte de Energia",stack: null,
+            scale: {
+              domain: [
+                "Coal",
+                "Gas",
+                "Nuclear",
+                "Hydro",
+                "Solar",
+                "Oil",
+                "Wind",
+                "Bioenergy",
+                "Other renewables"
+              ],
+              range: [
+                "#000000", // Carvão
+                "#32F4C3", // Gás
+                "#E9FE02", // Nuclear
+                "#170FFF", // Hidro
+                "#FEA502", // Solar
+                "#513313", // Óleo
+                "#FE0202", // Vento
+                "#ED02FE", // Bioenergia
+                "#FE22CE"  // Outras renováveis
+              ]
+            }
+           },
           tooltip: [
             { field: "Year", type: "temporal", title: "Ano" },
             { field: "Source", type: "nominal", title: "Fonte de Energia" },
@@ -49,51 +97,89 @@
       };
       vegaEmbed("#time_trends_by_source", lineChartTimeTrends).catch(console.error);
 
-        // Especificação do gráfico de mapa de calor
-      const heatmapSpec = {
-        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-        description: "Mapa de calor comparando países/regiões e fontes de energia",
-        data: {
-          url: "data/Electricity_production_by_source.csv", // Certifique-se de que o caminho está correto
-          format: { type: "csv" }
-        },
-        transform: [
-          { fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], as: ["Energy Source", "Production"] },
-          { calculate: "datum.Production == '' ? 0 : parseFloat(datum.Production)", as: "Production" } // Converte valores vazios para 0
-        ],
-        mark: "rect",
-        encoding: {
-          x: {
-            field: "Energy Source",
-            type: "nominal",
-            title: "Fonte de Energia",
-            axis: { labelAngle: -45 }
+      // mapa de calor
+  const heatmapSpec = {
+    $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+    description: "Mapa de calor comparando países/regiões e fontes de energia",
+    data: {
+      url: "data/Electricity_production_by_source.csv", 
+      format: { type: "csv" }
+    },
+    transform: [
+      { 
+        fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], 
+        as: ["Energy Source", "Production"] 
+      },
+      { 
+        calculate: "datum.Production == '' ? 0 : parseFloat(datum.Production)", 
+        as: "Production" 
+      },
+      { 
+        aggregate: [
+          { op: "mean", field: "Production", as: "MeanProduction" } // Calcula a média da produção por país
+        ], 
+        groupby: ["Entity"] 
+      },
+      { 
+        filter: "datum.MeanProduction > 1" // Filtra países com média de produção maior que 1.00
+      },
+      { 
+        lookup: "Entity", // Junta os dados filtrados novamente com as fontes de energia
+        from: {
+          data: {
+            url: "data/Electricity_production_by_source.csv",
+            format: { type: "csv" }
           },
-          y: {
-            field: "Entity",
-            type: "nominal",
-            title: "País/Região",
-            sort: "-x" // Ordenação pelos valores de produção
-          },
-          color: {
-            field: "Production",
-            type: "quantitative",
-            title: "Produção (TWh)",
-            scale: { scheme: "blues" } // Esquema de cores para o mapa de calor
-          },
-          tooltip: [
-            { field: "Entity", type: "nominal", title: "País/Região" },
-            { field: "Energy Source", type: "nominal", title: "Fonte de Energia" },
-            { field: "Production", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
-          ]
-        },
-        config: {
-          view: { stroke: null },
-          axis: { grid: false }
+          key: "Entity",
+          fields: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables", "Year"]
         }
-      };
-      // Renderizar o gráfico na div com id "countries-regions-heatmap"
-      vegaEmbed("#countries-regions-heatmap", heatmapSpec).catch(console.error);
+      },
+      { 
+        fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], 
+        as: ["Energy Source", "Production"] 
+      },
+      { 
+        calculate: "datum.Production == '' ? 0 : parseFloat(datum.Production)", 
+        as: "Production" 
+      }
+    ],
+    mark: "rect",
+    encoding: {
+      y: {
+        field: "Energy Source",
+        type: "nominal",
+        title: "Fonte de Energia",
+        axis: { labelAngle: -45 }
+      },
+      x: {
+        field: "Entity",
+        type: "nominal",
+        title: "País/Região",
+        sort: "-x" // Ordenação pelos valores de produção
+      },
+      color: {
+        field: "Production",
+        type: "quantitative",
+        title: "Produção (TWh)",
+        scale: {
+          scheme: "blues",
+          domain: [1, 100] // Ajuste os limites conforme o dataset
+        }
+      },
+      tooltip: [
+        { field: "Entity", type: "nominal", title: "País/Região" },
+        { field: "Energy Source", type: "nominal", title: "Fonte de Energia" },
+        { field: "Production", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
+      ]
+    },
+    config: {
+      view: { stroke: null },
+      axis: { grid: false }
+    }
+  };
+
+  // Renderizar o gráfico na div com id "countries-regions-heatmap"
+  vegaEmbed("#countries-regions-heatmap", heatmapSpec).catch(console.error);
 
       const renewableShareDonut = {
       $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
