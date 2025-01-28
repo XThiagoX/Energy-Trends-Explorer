@@ -1,72 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfico de Linha - Vega-lite</title>
-    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-</head>
-<body>
-    <h1>Gráfico de Linha</h1>
-    <div id="chart1"></div>
-    <hr>
-    <div id="oil-producers-chart"></div>
-    <script>
-       
-      const spec = {
-          $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-          description: 'Evolução do uso de carvão ao longo dos anos',
-          data: {
-              url: 'data/Electricity_production_by_source.csv', // Salve o arquivo CSV em uma pasta chamada "data"
-              format: { type: 'csv' }
-          },
-          mark: 'line',
-          encoding: {
-              x: { field: 'Year', type: 'temporal', title: 'Ano' },
-              y: { field: 'Coal', type: 'quantitative', title: 'Produção (TWh)' },
-              color: { field: 'Entity', type: 'nominal', title: 'País' }
-          }
-      };                
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Gráfico de Linha - Vega-lite</title>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  </head>
+  <body>
+    <h1>Tendências Temporais na Produção de Eletricidade por Fonte</h1>
+    <div id="time_trends_by_source"></div>
+    <h1>Comparação entre países e regiões</h1>
+    <div id="countries-regions-heatmap"></div>
+    <h1>Participação das fontes renováveis no total de energia</h1>
+    <div id="renewable-share-donut"></div>
+    <h1>Crescimento das fontes emergentes de energia</h1>
+    <div id="emerging-energy-growth"></div>
+    <h1>Comparação regional de transição energética</h1>
+    <div id="regional-energy-transition"></div>
 
-      vegaEmbed('#chart1', spec).catch(console.error);
-    
-            // Configuração do gráfico Vega-lite
-      const compar = {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-        description: 'Comparação entre os 3 maiores produtores de óleo',
+    <script>                              
+      const lineChartTimeTrends = {
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        description: "Tendências temporais na produção de eletricidade por fonte",
         data: {
-          url: 'data/Electricity_production_by_source.csv', // Certifique-se de que o arquivo CSV está neste local
-          format: { type: 'csv' }
+          url: "data/Electricity_production_by_source.csv", // Certifique-se de que o caminho está correto
+          format: { type: "csv" }
         },
         transform: [
-          { filter: "datum.Year == 2023" }, // Filtrar apenas o ano mais recente (2023)
-          { calculate: "parseFloat(datum.Oil)", as: "Oil" }, // Garantir que a coluna 'Oil' seja tratada como número
-          { window: [{ op: 'rank', as: 'Rank' }], sort: [{ field: 'Oil', order: 'descending' }] }, // Rankear os países pelo valor de 'Oil'
-          { filter: "datum.Rank <= 3" } // Filtrar apenas os 3 maiores produtores
+          { fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], as: ["Source", "Production"] }
         ],
-        mark: 'bar',
+        mark: "line",
         encoding: {
-          x: {
-            field: 'Entity',
-            type: 'nominal',
-            title: 'País',
-            axis: { labelAngle: 0.1 } // Deixa os nomes dos países na horizontal
-          },
-          y: {
-            field: 'Oil',
-            type: 'quantitative',
-            title: 'Produção de Óleo (TWh)'
-          },
-          color: {
-            field: 'Entity',
-            type: 'nominal',
-            legend: null // Remove a legenda, pois o eixo X já mostra os países
-          },
+          x: { field: "Year", type: "temporal", title: "Ano" },
+          y: { field: "Production", type: "quantitative", title: "Produção (TWh)" },
+          color: { field: "Source", type: "nominal", title: "Fonte de Energia" },
           tooltip: [
-            { field: 'Entity', type: 'nominal', title: 'País' },
-            { field: 'Oil', type: 'quantitative', title: 'Produção de Óleo (TWh)', format: '.2f' }
+            { field: "Year", type: "temporal", title: "Ano" },
+            { field: "Source", type: "nominal", title: "Fonte de Energia" },
+            { field: "Production", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
           ]
         },
         config: {
@@ -74,10 +47,212 @@
           axis: { grid: false }
         }
       };
+      vegaEmbed("#time_trends_by_source", lineChartTimeTrends).catch(console.error);
 
-      // Renderizar o gráfico na div com id "oil-producers-chart"
-      vegaEmbed('#oil-producers-chart', compar).catch(console.error);    
+        // Especificação do gráfico de mapa de calor
+      const heatmapSpec = {
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        description: "Mapa de calor comparando países/regiões e fontes de energia",
+        data: {
+          url: "data/Electricity_production_by_source.csv", // Certifique-se de que o caminho está correto
+          format: { type: "csv" }
+        },
+        transform: [
+          { fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"], as: ["Energy Source", "Production"] },
+          { calculate: "datum.Production == '' ? 0 : parseFloat(datum.Production)", as: "Production" } // Converte valores vazios para 0
+        ],
+        mark: "rect",
+        encoding: {
+          x: {
+            field: "Energy Source",
+            type: "nominal",
+            title: "Fonte de Energia",
+            axis: { labelAngle: -45 }
+          },
+          y: {
+            field: "Entity",
+            type: "nominal",
+            title: "País/Região",
+            sort: "-x" // Ordenação pelos valores de produção
+          },
+          color: {
+            field: "Production",
+            type: "quantitative",
+            title: "Produção (TWh)",
+            scale: { scheme: "blues" } // Esquema de cores para o mapa de calor
+          },
+          tooltip: [
+            { field: "Entity", type: "nominal", title: "País/Região" },
+            { field: "Energy Source", type: "nominal", title: "Fonte de Energia" },
+            { field: "Production", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
+          ]
+        },
+        config: {
+          view: { stroke: null },
+          axis: { grid: false }
+        }
+      };
+      // Renderizar o gráfico na div com id "countries-regions-heatmap"
+      vegaEmbed("#countries-regions-heatmap", heatmapSpec).catch(console.error);
+
+      const renewableShareDonut = {
+      $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+      description: 'Participação das fontes renováveis no total de energia',
+      data: {
+        url: 'data/Electricity_production_by_source.csv',
+        format: { type: 'csv' }
+      },
+      transform: [
+        { filter: "datum.Year == 2023" }, // Filtrar para o ano de 2023
+        {
+          calculate:
+            "datum.Solar + datum.Wind + datum.Hydro + datum.Bioenergy + datum['Other renewables']",
+          as: 'Renewables'
+        },
+        {
+          calculate:
+            "datum.Coal + datum.Gas + datum.Oil + datum.Nuclear + datum.Renewables",
+          as: 'Total'
+        },
+        { calculate: "datum.Renewables / datum.Total * 100", as: 'RenewableShare' },
+        {
+          fold: ['Coal', 'Gas', 'Oil', 'Nuclear', 'Renewables'],
+          as: ['Fonte', 'Produção']
+        }
+      ],
+      mark: { type: 'arc', innerRadius: 50 },
+      encoding: {
+        theta: {
+          field: 'Produção',
+          type: 'quantitative',
+          stack: true,
+          title: 'Produção (TWh)'
+        },
+        color: {
+          field: 'Fonte',
+          type: 'nominal',
+          scale: {
+            domain: ['Coal', 'Gas', 'Oil', 'Nuclear', 'Renewables'],
+            range: ['#a6611a', '#dfc27d', '#80cdc1', '#018571', '#67a9cf']
+          },
+          title: 'Fonte de Energia'
+        },
+        tooltip: [
+          { field: 'Fonte', type: 'nominal', title: 'Fonte de Energia' },
+          { field: 'Produção', type: 'quantitative', title: 'Produção (TWh)', format: '.2f' }
+        ]
+      },
+      config: {
+        view: { stroke: null },
+        legend: { orient: 'right' }
+      }
+    };
+      vegaEmbed('#renewable-share-donut', renewableShareDonut).catch(console.error);
+
+      const emergingEnergyGrowth = {
+      $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+      description: 'Crescimento das fontes emergentes de energia',
+      data: {
+        url: 'data/Electricity_production_by_source.csv',
+        format: { type: 'csv' }
+      },
+      transform: [
+        { filter: "datum.Year >= 2000" }, // Focar em dados a partir do ano 2000
+        {
+          fold: ['Solar', 'Wind', 'Coal', 'Gas', 'Oil'],
+          as: ['Fonte', 'Produção']
+        },
+        { calculate: "parseFloat(datum.Produção)", as: 'Produção' } // Garantir tipo numérico
+      ],
+      mark: 'point',
+      encoding: {
+        x: {
+          field: 'Year',
+          type: 'temporal',
+          title: 'Ano'
+        },
+        y: {
+          field: 'Produção',
+          type: 'quantitative',
+          title: 'Produção (TWh)',
+          scale: { zero: false }
+        },
+        color: {
+          field: 'Fonte',
+          type: 'nominal',
+          scale: {
+            domain: ['Solar', 'Wind', 'Coal', 'Gas', 'Oil'],
+            range: ['#ffcc00', '#66c2a5', '#a6611a', '#dfc27d', '#80cdc1']
+          },
+          title: 'Fonte de Energia'
+        },
+        tooltip: [
+          { field: 'Year', type: 'temporal', title: 'Ano' },
+          { field: 'Fonte', type: 'nominal', title: 'Fonte de Energia' },
+          { field: 'Produção', type: 'quantitative', title: 'Produção (TWh)', format: '.2f' }
+        ]
+      },
+      config: {
+        view: { stroke: null },
+        axis: { grid: false }
+      }
+    };
+      vegaEmbed('#emerging-energy-growth', emergingEnergyGrowth).catch(console.error);
+
+      const regionalEnergyTransition = {
+        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        description: 'Comparação regional de transição energética',
+        data: {
+          url: 'data/Electricity_production_by_source.csv',
+          format: { type: 'csv' }
+        },
+        transform: [
+          { filter: "datum.Year == 2020" }, // Focar no ano de 2020
+          {
+            fold: ['Solar', 'Wind', 'Hydro', 'Coal', 'Gas', 'Oil'],
+            as: ['Fonte', 'Produção']
+          },
+          { calculate: "parseFloat(datum.Produção)", as: 'Produção' } // Garantir tipo numérico
+        ],
+        mark: 'bar',
+        encoding: {
+          x: {
+            field: 'Fonte',
+            type: 'nominal',
+            title: 'Fonte de Energia',
+            axis: { labelAngle: -45 }
+          },
+          y: {
+            field: 'Produção',
+            type: 'quantitative',
+            title: 'Produção (TWh)'
+          },
+          color: {
+            field: 'Fonte',
+            type: 'nominal',
+            scale: {
+              domain: ['Solar', 'Wind', 'Hydro', 'Coal', 'Gas', 'Oil'],
+              range: ['#ffcc00', '#66c2a5', '#3288bd', '#a6611a', '#dfc27d', '#80cdc1']
+            },
+            legend: { title: 'Fonte de Energia' }
+          },
+          column: {
+            field: 'Region',
+            type: 'nominal',
+            title: 'Região'
+          },
+          tooltip: [
+            { field: 'Region', type: 'nominal', title: 'Região' },
+            { field: 'Fonte', type: 'nominal', title: 'Fonte de Energia' },
+            { field: 'Produção', type: 'quantitative', title: 'Produção (TWh)', format: '.2f' }
+          ]
+        },
+        config: {
+          view: { stroke: null },
+          axis: { grid: false }
+        }
+      };
+      vegaEmbed('#regional-energy-transition', regionalEnergyTransition).catch(console.error);
     </script>
-
-</body>
+  </body>
 </html>
