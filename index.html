@@ -11,15 +11,28 @@
   <body>
     <h1>Tendências Temporais na Produção de Eletricidade por Fonte</h1>
     <div id="time_trends_by_source"></div>
+
     <h1>Comparação entre países e regiões</h1>
     <div id="countries-regions-heatmap"></div>
+
     <h1>Participação das fontes renováveis no total de energia</h1>
     <div id="renewable-share-donut"></div>
     <p>Obs: o valor de produção da energia renovavel em 2023 é não inferior ao total produzido que não é visível no gráfico </p>
+    
     <h1>Crescimento das fontes emergentes de energia</h1>
     <div id="emerging-energy-growth"></div>
-    <h1>Comparação regional de transição energética</h1>
-    <div id="regional-energy-transition"></div>    
+    
+    <h1>Evolução do Mix Energético por País</h1>
+
+    <h2>United States</h2>
+    <div id="energy-mix-us"></div>  
+
+    <h2>United Kingdom</h2> 
+    <div id="energy-mix-uk"></div> 
+    
+    <h2>Spain</h2> 
+    <div id="energy-mix-spain"></div> 
+     
     <style>
       #time_trends_by_source {
         width: 100%;
@@ -27,7 +40,17 @@
       #emerging-energy-growth{
         width: 100%;
       }
+      #energy-mix-us{
+        width: 100%;
+      }
+      #energy-mix-uk{
+        width: 100%;
+      }
+      #energy-mix-spain{
+        width: 100%;
+      }
     </style>
+    
     <script>                              
       const lineChartTimeTrends = {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
@@ -180,126 +203,7 @@
           axis: { grid: false }
         }
       };
-      vegaEmbed("#countries-regions-heatmap", heatmapSpec).catch(console.error);
-
-      const renewableShareDonut = {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-        description: 'Comparação entre Energias Renováveis e Não Renováveis (2023)',
-        width: 300,  // Definindo largura explícita
-        height: 300, // Definindo altura explícita
-        data: {
-          url: 'data/Electricity_production_by_source.csv',
-          format: { type: 'csv' }
-        },
-        transform: [
-          // Filtrar apenas dados de 2023
-          { filter: "datum.Year == 2023" },
-          
-          // Garantir que os valores numéricos sejam tratados corretamente
-          {
-            calculate: "isValid(datum.Solar) ? datum.Solar : 0",
-            as: "Solar_clean"
-          },
-          {
-            calculate: "isValid(datum.Wind) ? datum.Wind : 0",
-            as: "Wind_clean"
-          },
-          {
-            calculate: "isValid(datum.Hydro) ? datum.Hydro : 0",
-            as: "Hydro_clean"
-          },
-          {
-            calculate: "isValid(datum.Bioenergy) ? datum.Bioenergy : 0",
-            as: "Bioenergy_clean"
-          },
-          {
-            calculate: "isValid(datum['Other renewables']) ? datum['Other renewables'] : 0",
-            as: "OtherRenewables_clean"
-          },
-          {
-            calculate: "isValid(datum.Coal) ? datum.Coal : 0",
-            as: "Coal_clean"
-          },
-          {
-            calculate: "isValid(datum.Gas) ? datum.Gas : 0",
-            as: "Gas_clean"
-          },
-          {
-            calculate: "isValid(datum.Nuclear) ? datum.Nuclear : 0",
-            as: "Nuclear_clean"
-          },
-          {
-            calculate: "isValid(datum.Oil) ? datum.Oil : 0",
-            as: "Oil_clean"
-          },
-          
-          // Calcular totais
-          {
-            calculate: "datum.Solar_clean + datum.Wind_clean + datum.Hydro_clean + datum.Bioenergy_clean + datum.OtherRenewables_clean",
-            as: "RenewableEnergy"
-          },
-          {
-            calculate: "datum.Coal_clean + datum.Gas_clean + datum.Nuclear_clean + datum.Oil_clean",
-            as: "NonRenewableEnergy"
-          },
-          
-          // Remover duplicatas
-          {
-            aggregate: [
-              {op: "sum", field: "RenewableEnergy", as: "RenewableTotal"},
-              {op: "sum", field: "NonRenewableEnergy", as: "NonRenewableTotal"}
-            ],
-            groupby: []
-          },
-          
-          // Transformar em formato adequado para o gráfico
-          {
-            fold: ["RenewableTotal", "NonRenewableTotal"],
-            as: ["Type", "Value"]
-          }
-        ],
-        mark: {
-          type: "arc",
-          innerRadius: 50,
-          outerRadius: 80,
-          padAngle: 0.03
-        },
-        encoding: {
-          theta: {
-            field: "Value",
-            type: "quantitative",
-            stack: true
-          },
-          color: {
-            field: "Type",
-            type: "nominal",
-            scale: {
-              domain: ["RenewableTotal", "NonRenewableTotal"],
-              range: ["#2EF30F", "#FF4136"]
-            },
-            legend: {
-              title: "Tipo de Energia",
-              labelExpr: "datum.label == 'RenewableTotal' ? 'Renovável' : 'Não Renovável'"
-            }
-          },
-          tooltip: [
-            {
-              field: "Type",
-              type: "nominal",
-              title: "Tipo",
-              labelExpr: "datum.value == 'RenewableTotal' ? 'Renovável' : 'Não Renovável'"
-            },
-            {
-              field: "Value",
-              type: "quantitative",
-              title: "Produção Total (TWh)",
-              format: ".2f"
-            }
-          ]
-        }
-      };
-
-      vegaEmbed('#renewable-share-donut', renewableShareDonut).catch(console.error);
+      vegaEmbed("#countries-regions-heatmap", heatmapSpec).catch(console.error);      
 
       const emergingEnergyGrowth = {
         $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
@@ -362,97 +266,82 @@
       };
       vegaEmbed('#emerging-energy-growth', emergingEnergyGrowth).catch(console.error);
 
-      const regionalEnergyTransition = {
-        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-        description: "Comparação regional de transição energética",
-        data: {
-          url: "data/Electricity_production_by_source.csv",
-          format: { type: "csv" }
-        },
-        transform: [
-          // Filtrar para um ano específico, por exemplo, 2023
-          { filter: "datum.Year == 2023" },
-
-          // Separação manual por continentes
-          {
-            calculate: `
-              datum.Entity == 'United States' || datum.Entity == 'Canada' ? 'North America' :
-              datum.Entity == 'Brazil' || datum.Entity == 'Argentina' ? 'South America' :
-              datum.Entity == 'Germany' || datum.Entity == 'France' || datum.Entity == 'United Kingdom' ? 'Europe' :
-              datum.Entity == 'China' || datum.Entity == 'India' || datum.Entity == 'Japan' ? 'Asia' :
-              datum.Entity == 'Australia' || datum.Entity == 'New Zealand' ? 'Oceania' :
-              datum.Entity == 'South Africa' || datum.Entity == 'Egypt' ? 'Africa' : 'Other'
-            `,
-            as: "Region"
+      // Gráfico do mix energético para os Estados Unidos
+      function getCountryChart(countryCode, chartId, description) {
+        const countryChart = {
+          $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+          description: description,
+          width: "container", 
+          height: 400, 
+          data: {
+            url: "data/Electricity_production_by_source.csv",
+            format: { type: "csv" }
           },
-
-          // Agregar a produção por região e fonte de energia
-          {
-            fold: ["Coal", "Gas", "Nuclear", "Hydro", "Solar", "Oil", "Wind", "Bioenergy", "Other renewables"],
-            as: ["Energy Source", "Production"]
-          },
-          {
-            calculate: "datum.Production == null || datum.Production === '' ? 0 : +datum.Production",
-            as: "Production"
-          },
-          {
-            aggregate: [
-              { op: "sum", field: "Production", as: "TotalProduction" }
-            ],
-            groupby: ["Region", "Energy Source"]
-          },
-
-          // Destacar os países com o maior aumento em renováveis
-          {
-            calculate: `
-              datum.Region == 'Europe' && datum.Energy Source == 'Hydro' ? 'Leader' :
-              datum.Region == 'Asia' && datum.Energy Source == 'Solar' ? 'Leader' :
-              datum.Region == 'North America' && datum.Energy Source == 'Wind' ? 'Leader' : 'Other'
-            `,
-            as: "Highlight"
-          }
-        ],
-        mark: "bar",
-        encoding: {
-          x: {
-            field: "Energy Source",
-            type: "nominal",
-            title: "Fonte de Energia",
-            axis: { labelAngle: -45 }
-          },
-          y: {
-            field: "TotalProduction",
-            type: "quantitative",
-            title: "Produção (TWh)"
-          },
-          color: {
-            field: "Highlight",
-            type: "nominal",
-            scale: {
-              domain: ["Leader", "Other"],
-              range: ["#FF0000", "#1f77b4"]
+          transform: [
+            { filter: `datum.Code == '${countryCode}'` }, // Filtro pelo código do país
+            {
+              fold: [
+                "Coal",
+                "Gas",
+                "Nuclear",
+                "Hydro",
+                "Solar",
+                "Oil",
+                "Wind",
+                "Bioenergy",
+                "Other renewables"
+              ],
+              as: ["Source", "Production"]
             },
-            legend: { title: "Destaque" }
+            {
+              calculate: "datum.Production == null || datum.Production === '' ? 0 : datum.Production",
+              as: "Production"
+            }
+          ],
+          mark: { type: "line", interpolate: "monotone" },
+          encoding: {
+            x: { field: "Year", type: "temporal", title: "Ano", axis: { format: "%Y" } },
+            y: { field: "Production", type: "quantitative", title: "Produção (TWh)" },
+            color: {
+              field: "Source",
+              type: "nominal",
+              title: "Fonte de Energia",
+              scale: {
+                domain: [
+                  "Coal",
+                  "Gas",
+                  "Nuclear",
+                  "Hydro",
+                  "Solar",
+                  "Oil",
+                  "Wind",
+                  "Bioenergy",
+                  "Other renewables"
+                ],
+                range: [
+                  "#000000", "#32F4C3", "#E9FE02", "#170FFF", "#FEA502", 
+                  "#513313", "#FE0202", "#ED02FE", "#FE22CE"
+                ]
+              }
+            },
+            tooltip: [
+              { field: "Year", type: "temporal", title: "Ano" },
+              { field: "Source", type: "nominal", title: "Fonte de Energia" },
+              { field: "Production", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
+            ]
           },
-          column: {
-            field: "Region",
-            type: "nominal",
-            title: "Região"
-          },
-          tooltip: [
-            { field: "Region", type: "nominal", title: "Região" },
-            { field: "Energy Source", type: "nominal", title: "Fonte de Energia" },
-            { field: "TotalProduction", type: "quantitative", title: "Produção (TWh)", format: ".2f" }
-          ]
-        },
-        config: {
-          view: { stroke: null },
-          axis: { grid: false }
-        }
-      };
+          config: {
+            view: { stroke: null },
+            axis: { grid: false }
+          }
+        };
+        vegaEmbed(chartId, countryChart).catch(console.error);
+      }
 
-    vegaEmbed("#regional-energy-transition", regionalEnergyTransition).catch(console.error);
-
+      // Renderizar os gráficos para cada país
+      getCountryChart("USA", "#energy-mix-us", "Tendências do Mix Energético - United States");
+      getCountryChart("GBR", "#energy-mix-uk", "Tendências do Mix Energético - United Kingdom");
+      getCountryChart("ESP", "#energy-mix-spain", "Tendências do Mix Energético - Spain");
     </script>
   </body>
 </html>
